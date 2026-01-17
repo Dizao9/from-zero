@@ -12,13 +12,10 @@ func ping(pings chan<- string) {
 
 func pong(pings <-chan string, pongs chan<- string) {
 	time.Sleep(1 * time.Second)
-	select {
-	case <-pings:
+	msg := <-pings
+	if msg == "ping" {
 		pongs <- "pong"
-	default:
-		pongs <- "he doesn't pong me :("
 	}
-
 }
 
 func main() {
