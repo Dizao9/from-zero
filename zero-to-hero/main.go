@@ -1,29 +1,53 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 )
 
-func ping(pings chan<- string) {
-	time.Sleep(1 * time.Second)
-	pings <- "ping"
-}
+func worker(ctx context.Context, wg *sync.WaitGroup, id int, jobs <-chan int, slTime time.Duration) {
+	defer wg.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("Halted by context")
+			return
+		case j, ok := <-jobs:
+			if !ok {
+				return
+			}
+			fmt.Println("worker", id, "start working with", j)
+			select {
+			case <-time.After(slTime * time.Second):
+				fmt.Println("worker", id, "finish working with", j)
+			case <-ctx.Done():
 
-func pong(pings <-chan string, pongs chan<- string) {
-	time.Sleep(1 * time.Second)
-	msg := <-pings
-	if msg == "ping" {
-		pongs <- "pong"
+				return
+			}
+		}
 	}
 }
 
 func main() {
-	pings := make(chan string, 1)
-	pongs := make(chan string, 1)
+	var wg sync.WaitGroup
+	numJobs := 5
+	jobs := make(chan int, numJobs)
 
-	go ping(pings)
-	go pong(pings, pongs)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	fmt.Println(<-pongs)
+	for w := 1; w <= 3; w++ {
+		wg.Add(1)
+		go worker(ctx, &wg, w, jobs, time.Duration(w))
+	}
+
+	for j := 1; j <= 3; j++ {
+		jobs <- j
+	}
+	fmt.Println("all jobs were sent")
+	close(jobs)
+
+	wg.Wait()
 }
