@@ -3,10 +3,10 @@
 Цель: Получить оффер на Junior Go Developer (80к+) за 2 месяца.
 
 ## Неделя 1: Concurrency & Core (Многопоточность)
-- [ ] Изучить Goroutines & Channels (Go by Example)
-- [ ] Изучить WaitGroup & Mutex
-- [ ] **Практика:** Написать Worker Pool (конкурентная обработка задач)
-- [ ] Разобраться с Race Condition (состояние гонки)
+- [x] Изучить Goroutines & Channels (Go by Example)
+- [x] Изучить WaitGroup & Mutex
+- [x] **Практика:** Написать Worker Pool (конкурентная обработка задач)
+- [x] Разобраться с Race Condition (состояние гонки)
 
 ## Неделя 2: SQL & Data (Базы данных)
 - [ ] Поднять PostgreSQL в Docker
