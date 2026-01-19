@@ -12,9 +12,9 @@ type BankAccount struct {
 
 func (bank *BankAccount) Deposit(wg *sync.WaitGroup, amount int) {
 	defer wg.Done()
-	//	bank.mutex.Lock()
+	bank.mutex.Lock()
 	defer bank.mutex.Unlock()
-	// bank.balance += amount
+	bank.balance += amount
 }
 
 // func worker(ctx context.Context, wg *sync.WaitGroup, id int, jobs <-chan int, slTime time.Duration) {
