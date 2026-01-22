@@ -1,71 +1,82 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
-	"sync"
+	"log"
+	"net/http"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type BankAccount struct {
-	balance int
-	mutex   sync.Mutex
+type Handler struct {
+	DB *sql.DB
 }
 
-func (bank *BankAccount) Deposit(wg *sync.WaitGroup, amount int) {
-	defer wg.Done()
-	bank.mutex.Lock()
-	defer bank.mutex.Unlock()
-	bank.balance += amount
+type User struct {
+	Username string `json:"username"`
+	Email    string `json:"email,omitempty"`
 }
 
-// func worker(ctx context.Context, wg *sync.WaitGroup, id int, jobs <-chan int, slTime time.Duration) {
-// 	defer wg.Done()
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			fmt.Println("Halted by context")
-// 			return
-// 		case j, ok := <-jobs:
-// 			if !ok {
-// 				return
-// 			}
-// 			fmt.Println("worker", id, "start working with", j)
-// 			select {
-// 			case <-time.After(slTime * time.Second):
-// 				fmt.Println("worker", id, "finish working with", j)
-// 			case <-ctx.Done():
+func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
+	if method := r.Method; method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	rows, err := h.DB.Query(`SELECT username, email
+	FROM users`)
+	if err != nil {
+		http.Error(w, "Internal Server Error, Failed to get users data", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-// 				return
-// 			}
-// 		}
-// 	}
-// }
+	res := make([]User, 0, 3)
 
-func main() {
-	var wg sync.WaitGroup
-	bankAcc := &BankAccount{}
+	for rows.Next() {
+		var u User
+		err := rows.Scan(&u.Username, &u.Email)
+		if err != nil {
+			http.Error(w, "failed to read data from rows", http.StatusInternalServerError)
+			return
+		}
+		res = append(res, u)
+	}
+	if err = rows.Err(); err != nil {
+		http.Error(w, "error with rows method", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		log.Printf("failed to encode response")
+	}
+}
 
-	for i := 1; i <= 1000; i++ {
-		wg.Add(1)
-		go bankAcc.Deposit(&wg, 1)
+func connectToDB(dsn string) *sql.DB {
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		log.Fatal("Failed to open a db driver:", err)
 	}
 
-	// numJobs := 5
-	// jobs := make(chan int, numJobs)
+	if err := db.Ping(); err != nil {
+		log.Fatal("Failed to connect to DB:", err)
+	}
+	return db
+}
 
-	// ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	// defer cancel()
+func main() {
+	dsn := "postgres://postgres:postgres@localhost:5433/postgres"
+	db := connectToDB(dsn)
+	defer db.Close()
 
-	// for w := 1; w <= 3; w++ {
-	// 	wg.Add(1)
-	// 	go worker(ctx, &wg, w, jobs, time.Duration(w))
-	// }
+	h := Handler{DB: db}
 
-	// for j := 1; j <= 3; j++ {
-	// 	jobs <- j
-	// }
-	// fmt.Println("all jobs were sent")
-	// close(jobs)
+	http.HandleFunc("/users", h.GetUsers)
 
-	wg.Wait()
-	fmt.Println("Current balance = ", bankAcc.balance)
+	fmt.Println("server is running on :8082")
+	if err := http.ListenAndServe(":8082", nil); err != nil {
+		log.Println("error to start server on port 8082:", err)
+	}
 }
