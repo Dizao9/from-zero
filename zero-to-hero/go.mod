@@ -1,4 +1,4 @@
-module main.go
+module zero-to-hero
 
 go 1.24.1
 
