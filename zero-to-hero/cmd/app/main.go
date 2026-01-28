@@ -43,10 +43,10 @@ func main() {
 	store := &storage.Storage{DB: db}
 	h := &transport.Handler{Store: store}
 
-	finalHandler := http.HandlerFunc(h.GetUsers)
+	finalHandler := http.HandlerFunc(h.HandleUsers)
 
-	wrappedHandler := transport.LoggindMiddleware(finalHandler)
-	http.Handle("/users", wrappedHandler)
+	wrappedHandlerUser := transport.LoggindMiddleware(finalHandler)
+	http.Handle("/users", wrappedHandlerUser)
 
 	srv := &http.Server{
 		Addr:    ":" + conf.Port,

@@ -32,3 +32,12 @@ func (s *Storage) GetUsers() ([]User, error) {
 
 	return users, nil
 }
+
+func (s *Storage) CreateUser(user User) (int, error) {
+	var id int
+	err := s.DB.QueryRow("INSERT INTO users (username, email) VALUES ($1, $2) RETURNING ID", user.Username, user.Email).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}

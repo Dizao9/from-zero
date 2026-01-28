@@ -16,6 +16,10 @@ func (m *MockStorage) GetUsers() ([]storage.User, error) {
 	}, nil
 }
 
+func (m *MockStorage) CreateUser(user storage.User) (int, error) {
+	return 0, nil
+}
+
 func TestHandler_GetUsers(t *testing.T) {
 	mockStore := &MockStorage{}
 	handler := &Handler{
