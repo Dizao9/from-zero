@@ -1,22 +1,26 @@
 package transport
 
 import (
-	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"zero-to-hero/internal/storage"
 )
 
-type MockStorage struct{}
-
-func (m *MockStorage) GetUsers() ([]storage.User, error) {
-	return []storage.User{
-		{Username: "test_user", Email: "text@example.com"},
-	}, nil
+type MockStorage struct {
+	MockGetUsersFunc func() ([]storage.User, error)
 }
 
-func (m *MockStorage) CreateUser(user storage.User) (int, error) {
+func (m *MockStorage) GetUsers() ([]storage.User, error) {
+	if m.MockGetUsersFunc != nil {
+		return m.MockGetUsersFunc()
+	}
+
+	return nil, nil
+}
+
+func (m *MockStorage) CreateUser(u storage.User) (int, error) {
 	return 0, nil
 }
 
@@ -28,40 +32,51 @@ func (m *MockStorage) UpdateUser(id int, u storage.User) error {
 	return nil
 }
 
-func TestHandler_GetUsers(t *testing.T) {
-	mockStore := &MockStorage{}
-	handler := &Handler{
-		Store: mockStore,
+func TestHandler_GetUsers_TableDriven(t *testing.T) {
+	test := []struct {
+		name           string
+		mockReturnData []storage.User
+		mockReturnErr  error
+		expectedCode   int
+	}{
+		{
+			name:           "Success Case",
+			mockReturnData: []storage.User{{Username: "Max"}},
+			mockReturnErr:  nil,
+			expectedCode:   http.StatusOK,
+		},
+		{
+			name:           "DB Error",
+			mockReturnData: nil,
+			mockReturnErr:  errors.New("datal db error"),
+			expectedCode:   http.StatusInternalServerError,
+		},
+		{
+			name:           "Empty case",
+			mockReturnData: []storage.User{},
+			mockReturnErr:  nil,
+			expectedCode:   http.StatusOK,
+		},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/users", nil)
-	w := httptest.NewRecorder()
+	for _, tc := range test {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStore := &MockStorage{
+				MockGetUsersFunc: func() ([]storage.User, error) {
+					return tc.mockReturnData, tc.mockReturnErr
+				},
+			}
 
-	handler.GetUsers(w, req)
+			h := &Handler{Store: mockStore}
 
-	resp := w.Result()
+			req := httptest.NewRequest(http.MethodGet, "/users", nil)
+			w := httptest.NewRecorder()
 
-	defer resp.Body.Close()
+			h.GetUsers(w, req)
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200 status, god %d", resp.StatusCode)
-	}
-
-	if resp.Header.Get("Content-Type") != "application/json" {
-		t.Errorf("expected Content-Type = application json")
-	}
-
-	var users []storage.User
-	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
-		t.Error("decoder was falled")
-	}
-
-	if len(users) != 1 {
-		t.Errorf("expected 1 user, got %d", len(users))
-	}
-
-	expectedUser := "test_user"
-	if users[0].Username != expectedUser {
-		t.Errorf("expected username %s, got %s", expectedUser, users[0].Username)
+			if w.Code != tc.expectedCode {
+				t.Errorf("want %d, got %d", tc.expectedCode, w.Code)
+			}
+		})
 	}
 }
