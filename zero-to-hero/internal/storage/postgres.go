@@ -1,6 +1,10 @@
 package storage
 
-import "database/sql"
+import (
+	"database/sql"
+)
+
+var UserNotFound error
 
 type Storage struct {
 	DB *sql.DB
@@ -40,4 +44,37 @@ func (s *Storage) CreateUser(user User) (int, error) {
 		return 0, err
 	}
 	return id, nil
+}
+
+func (s *Storage) DeleteUser(id int) error {
+	res, err := s.DB.Exec("DELETE FROM users WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return UserNotFound
+	}
+	return nil
+}
+
+func (s *Storage) UpdateUser(id int, u User) error {
+	res, err := s.DB.Exec("UPDATE users SET username = $1, email = $2 WHERE id = $3", u.Username, u.Email, id)
+	if err != nil {
+		return err
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return UserNotFound
+	}
+
+	return nil
 }

@@ -15,6 +15,7 @@ import (
 	"zero-to-hero/internal/transport"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func connectToDB(dsn string) (*sql.DB, error) {
@@ -29,6 +30,11 @@ func connectToDB(dsn string) (*sql.DB, error) {
 	return db, err
 }
 
+// @title Zero-To-Hero API
+// @version 1.0
+// @description Это Api для обучения Go.
+// @host localhost:8080
+// @BasePath /
 func main() {
 	conf, err := config.LoadConfig()
 	if err != nil {
@@ -43,14 +49,17 @@ func main() {
 	store := &storage.Storage{DB: db}
 	h := &transport.Handler{Store: store}
 
-	finalHandler := http.HandlerFunc(h.HandleUsers)
+	mux := http.NewServeMux()
 
-	wrappedHandlerUser := transport.LoggindMiddleware(finalHandler)
-	http.Handle("/users", wrappedHandlerUser)
+	mux.HandleFunc("GET /users", h.GetUsers)
+	mux.HandleFunc("POST /users", h.CreateUser)
+	mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
+	mux.HandleFunc("PUT /users/{id}", h.UpdateUser)
+	mux.HandleFunc("GET /swagger/", httpSwagger.WrapHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + conf.Port,
-		Handler: nil,
+		Handler: mux,
 	}
 
 	go func() {
