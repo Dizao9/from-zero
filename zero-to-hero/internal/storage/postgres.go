@@ -2,9 +2,10 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 )
 
-var UserNotFound error
+var UserNotFound = errors.New("user not found")
 
 type Storage struct {
 	DB *sql.DB
