@@ -9,18 +9,18 @@
 - [x] Разобраться с Race Condition (состояние гонки)
 
 ## Неделя 2: SQL & Data (Базы данных)
-- [ ] Поднять PostgreSQL в Docker
-- [ ] Спроектировать схему БД (интернет-магазин)
-- [ ] Написать миграции на чистом SQL
-- [ ] Написать сложные запросы (JOIN, GROUP BY) без ORM
+- [x] Поднять PostgreSQL в Docker
+- [x] Спроектировать схему БД (интернет-магазин)
+- [x] Написать миграции на чистом SQL
+- [x] Написать сложные запросы (JOIN, GROUP BY) без ORM
 
 ## Неделя 3: API & Docker (Инфраструктура)
-- [ ] Написать REST API (net/http или chi)
-- [ ] Реализовать CRUD для базы данных
-- [ ] Написать Dockerfile (Multistage build)
-- [ ] Настроить docker-compose
+- [x] Написать REST API (net/http или chi)
+- [x] Реализовать CRUD для базы данных
+- [x] Написать Dockerfile (Multistage build)
+- [x] Настроить docker-compose
 
 ## Неделя 4: Quality Assurance (Тесты и Git)
-- [ ] Написать Unit-тесты
-- [ ] Изучить Mocks
-- [ ] Git Flow (ветки, Pull Requests)
+- [x] Написать Unit-тесты
+- [x] Изучить Mocks
+- [x] Git Flow (ветки, Pull Requests)
